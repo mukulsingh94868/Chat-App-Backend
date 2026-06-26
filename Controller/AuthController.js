@@ -21,7 +21,7 @@ export const registerUser = async (req, res) => {
     const user = new Auth({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     await user.save();
@@ -29,7 +29,7 @@ export const registerUser = async (req, res) => {
     res.status(201).json({
       statusCode: 201,
       message: `User registered successfully`,
-      userId: user?._id
+      userId: user?._id,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -47,9 +47,11 @@ export const loginUser = async (req, res) => {
     const user = await Auth.findOne({ email }).select("+password");
     // If no user exists → "Please Register First"
     if (!user) {
-      return res.status(404).json({ message: "User not found, Please Register First" });
+      return res
+        .status(404)
+        .json({ message: "User not found, Please Register First" });
     }
-    
+
     // If password doesn't match → "Invalid credentials"
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -60,10 +62,10 @@ export const loginUser = async (req, res) => {
       {
         userId: user?._id,
         email: user?.email,
-        name: user?.name
+        name: user?.name,
       },
       SECRET_KEY,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     res.status(200).json({
@@ -73,11 +75,26 @@ export const loginUser = async (req, res) => {
       data: {
         userId: user?._id,
         email: user?.email,
-        name: user?.name
+        name: user?.name,
       },
     });
   } catch (error) {
     console.error("Login Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await Auth.find({}, { password: 0 }).sort({ createdAt: 1 });
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Users fetched successfully",
+      data: users,
+    });
+  } catch (error) {
+    console.error("Get Users Error:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
