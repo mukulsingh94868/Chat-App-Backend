@@ -20,7 +20,7 @@ const SECRET_KEY = process.env.SECRET_KEY;
 // basic middleware
 app.use(
   cors({
-    origin: "*", // later restrict to your Next.js origin
+    origin: "*", // in prod: your Next.js URL
     credentials: true,
   })
 );
@@ -31,19 +31,18 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 // REST auth routes
 app.use("/api/auth", AuthRoutes);
 
-// static (if you need it)
+// static (optional)
 app.use(express.static("public"));
 
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: "*", // change to your Next app URL in prod
+    origin: "*", // in prod: your Next.js URL
     credentials: true,
   },
 });
 
-// ========== Socket.IO AUTH MIDDLEWARE ==========
-// client must connect with: io("http://localhost:5000", { auth: { token } })
+// ========== SOCKET.IO AUTH MIDDLEWARE ==========
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
 
@@ -62,7 +61,7 @@ io.use((socket, next) => {
   }
 });
 
-// ========== PRESENCE TRACKING ==========
+// ========== PRESENCE & ROOMS ==========
 // userId -> Set(socketId)
 const userSockets = new Map();
 
@@ -71,7 +70,6 @@ function emitOnlineUsers() {
   io.emit("online-users", onlineUserIds);
 }
 
-// helper for DM room id
 function makeRoomId(userAId, userBId) {
   const [a, b] = [String(userAId), String(userBId)].sort();
   return `dm:${a}:${b}`;
@@ -90,7 +88,7 @@ io.on("connection", (socket) => {
 
   const userId = socket.userId;
 
-  // add this socket to user's set
+  // track sockets per user
   if (!userSockets.has(userId)) {
     userSockets.set(userId, new Set());
   }
@@ -98,16 +96,16 @@ io.on("connection", (socket) => {
 
   emitOnlineUsers();
 
-  // 1: JOIN DM ROOM
+  // join 1–1 DM room
   socket.on("join-dm", ({ toUserId }) => {
     if (!toUserId || !userId) return;
 
     const roomId = makeRoomId(userId, toUserId);
 
-    // this socket joins the DM room
+    // this socket joins room
     socket.join(roomId);
 
-    // if the other user is online, join all their sockets
+    // if other user online, join their sockets too
     const targetSockets = userSockets.get(toUserId);
     if (targetSockets) {
       for (const sid of targetSockets) {
@@ -116,11 +114,11 @@ io.on("connection", (socket) => {
       }
     }
 
-    // tell this client which roomId to use
+    // tell this client which room to use
     socket.emit("joined-dm", { roomId, toUserId });
   });
 
-  // 2: SEND DM MESSAGE (ephemeral – no DB)
+  // DM message (ephemeral)
   socket.on("dm-message", ({ roomId, text }) => {
     if (!roomId || !text) return;
 
@@ -133,16 +131,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // 3: OPTIONAL – still keep a simple global chat if you want it
-  socket.on("chat-message", ({ text }) => {
-    if (!text) return;
-    io.emit("chat-message", {
-      username: socket.username,
-      text,
-    });
-  });
-
-  // disconnect
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
 

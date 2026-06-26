@@ -1,7 +1,8 @@
+// Controller/AuthController.js
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import Auth from "..//Models/AuthModel.js";
+import Auth from "../Models/AuthModel.js";
 
 dotenv.config();
 
@@ -41,18 +42,18 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ error: "Email and password are required" });
     }
 
     const user = await Auth.findOne({ email }).select("+password");
-    // If no user exists → "Please Register First"
     if (!user) {
       return res
         .status(404)
         .json({ message: "User not found, Please Register First" });
     }
 
-    // If password doesn't match → "Invalid credentials"
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -65,7 +66,7 @@ export const loginUser = async (req, res) => {
         name: user?.name,
       },
       SECRET_KEY,
-      { expiresIn: "7d" },
+      { expiresIn: "7d" }
     );
 
     res.status(200).json({
@@ -84,13 +85,13 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// NEW: get all users for left list
 export const getAllUsers = async (req, res) => {
   try {
     const users = await Auth.find({}, { password: 0 }).sort({ createdAt: 1 });
 
     res.status(200).json({
       statusCode: 200,
-      message: "Users fetched successfully",
       data: users,
     });
   } catch (error) {
