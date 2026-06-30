@@ -42,9 +42,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ error: "Email and password are required" });
+      return res.status(400).json({ error: "Email and password are required" });
     }
 
     const user = await Auth.findOne({ email }).select("+password");
@@ -66,7 +64,7 @@ export const loginUser = async (req, res) => {
         name: user?.name,
       },
       SECRET_KEY,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     res.status(200).json({
@@ -97,5 +95,38 @@ export const getAllUsers = async (req, res) => {
   } catch (error) {
     console.error("Get Users Error:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const updateProfileImage = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Profile image is required",
+      });
+    }
+
+    const updatedUser = await Auth.findByIdAndUpdate(
+      userId,
+      {
+        profileImage: req.file.filename,
+      },
+      {
+        new: true,
+        select: "-password",
+      },
+    );
+
+    res.status(200).json({
+      message: "Profile image updated successfully",
+      data: updatedUser,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
   }
 };

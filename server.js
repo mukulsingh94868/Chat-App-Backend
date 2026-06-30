@@ -4,7 +4,7 @@ import { Server } from "socket.io";
 import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
-import { createServer } from "http";
+import { createServer } from "node:http";
 import jwt from "jsonwebtoken";
 
 import AuthRoutes from "./Routes/AuthRoutes.js";
@@ -25,13 +25,23 @@ app.use(
   })
 );
 
+import path from "node:path";
+
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"))
+);
+
+app.get("/test-upload", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "uploads", "text.txt"));
+});
+
+app.use("/uploads", express.static("uploads"));
+
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
-// REST auth routes
 app.use("/api/auth", AuthRoutes);
-
-// static (optional)
 app.use(express.static("public"));
 
 // Socket.IO setup

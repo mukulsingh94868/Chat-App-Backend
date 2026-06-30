@@ -18,9 +18,13 @@ const authSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       select: false,
-    }
+    },
+    profileImage: {
+      type: String,
+      default: "",
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Auth = mongoose.model("Auth", authSchema);
