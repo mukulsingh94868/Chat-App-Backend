@@ -6,7 +6,7 @@ import {
   registerUser,
   updateProfileImage,
 } from "../Controller/AuthController.js";
-import authenticateUser from "../middleware/authMiddleware.js";
+import authenticateUser from "../Middleware/authenticateUser.js";
 import { upload } from "../Middleware/upload.js";
 
 const router = express.Router();
