@@ -6,6 +6,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { createServer } from "node:http";
 import jwt from "jsonwebtoken";
+import path from "node:path";
 
 import AuthRoutes from "./Routes/AuthRoutes.js";
 
@@ -25,8 +26,6 @@ app.use(
   })
 );
 
-import path from "node:path";
-
 app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "uploads"))
@@ -35,8 +34,6 @@ app.use(
 app.get("/test-upload", (req, res) => {
   res.sendFile(path.join(process.cwd(), "uploads", "text.txt"));
 });
-
-// app.use("/uploads", express.static("uploads"));
 
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
@@ -138,6 +135,33 @@ io.on("connection", (socket) => {
       fromUsername: socket.username,
       text,
       createdAt: new Date().toISOString(),
+    });
+  });
+
+  // ========== TYPING INDICATOR ==========
+  // user started typing in a room
+  socket.on("typing", ({ roomId }) => {
+    if (!roomId) return;
+
+    // notify everyone else in this room
+    socket.to(roomId).emit("typing", {
+      roomId,
+      userId: socket.userId,
+      username: socket.username,
+      isTyping: true,
+    });
+  });
+
+  // user stopped typing in a room
+  socket.on("stop-typing", ({ roomId }) => {
+    if (!roomId) return;
+
+    // notify everyone else in this room
+    socket.to(roomId).emit("stop-typing", {
+      roomId,
+      userId: socket.userId,
+      username: socket.username,
+      isTyping: false,
     });
   });
 
