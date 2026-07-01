@@ -105,27 +105,27 @@ export const updateProfileImage = async (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({
-        message: "Profile image is required",
+        message: "Image is required",
       });
     }
 
     const updatedUser = await Auth.findByIdAndUpdate(
       userId,
       {
-        profileImage: req.file.filename,
+        profileImage: req.file.path,
       },
       {
         new: true,
         select: "-password",
-      },
+      }
     );
 
-    res.status(200).json({
+    res.json({
       message: "Profile image updated successfully",
       data: updatedUser,
     });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     res.status(500).json({
       error: "Internal Server Error",
     });
